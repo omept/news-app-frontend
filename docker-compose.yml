@@ -1,0 +1,12 @@
+version: "3.8"
+services:
+  app-ui:
+    container_name: newsfeed-frontend
+    build:
+      context: ./nextjs
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./nextjs:/app
+      - /app/node_modules
