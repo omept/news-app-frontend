@@ -4,22 +4,16 @@ import { log } from "../_appBackendApi/appBackendApi";
 export function authReducer(authState, action) {
   switch (action.type) {
     case "login": {
-      localStorage.setItem('token', action.payload.token);
+      localStorage.setItem("token", action.payload.token);
       return action.payload;
     }
-
     case "sign-up": {
-      return tasks.map((t) => {
-        if (t.id === action.task.id) {
-          return action.task;
-        } else {
-          return t;
-        }
-      });
+      localStorage.setItem("token", action.payload.token);
+      return action.payload;
     }
     case "logout": {
       log("logout called");
-      localStorage.removeItem('token');
+      localStorage.removeItem("token");
       return { user: {}, token: "", message: "" };
     }
     default: {
