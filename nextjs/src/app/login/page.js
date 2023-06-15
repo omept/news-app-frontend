@@ -2,7 +2,9 @@
 import { log } from "../_appBackendApi/appBackendApi";
 import { useContext, useEffect, useRef, useState } from "react";
 import { AuthContext, AuthDispatchContext } from "../_contexts/authContext";
-import { redirect } from "next/navigation";
+import { useRouter } from 'next/router';
+import axios from "axios";
+
 
 export default function Login() {
   const authState = useContext(AuthContext);
@@ -12,43 +14,60 @@ export default function Login() {
   const [fetching, setFetching] = useState(false);
   const emailInput = useRef();
   const passwordInput = useRef();
+  const router = useRouter();
+  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API;
 
   if (authState.token != "") {
-    redirect("/");
+    router.push("/");
   }
 
   useEffect(() => {
-    // Access the resolved value of the promise
-    if (!(authState instanceof Promise)) {
-      return;
-    }
-    authState.then((authState) => {
-      // Check if the context value has changed
-      if (prevAuthState.current !== authState) {
-        // Perform any other actions based on the updated context value
-        if (!authState.ok) {
-          setErrorMessage(() => authState.message);
-          setFetching(() => false);
-        } else {
-          redirect("/");
-        }
+    if (prevAuthState.current !== authState) {
+      // Perform any other actions based on the updated context value
+      if (!authState.ok) {
+        setErrorMessage(() => authState.message);
+        setFetching(() => false);
       }
-      // Update the previous value to track changes in the future
-      prevAuthState.current = authState;
-    });
+    }
+    // Update the previous value to track changes in the future
+    prevAuthState.current = authState;
   }, [authState]);
 
   async function submitLogin(event) {
     event.preventDefault();
     setFetching(() => true);
     setErrorMessage(() => "");
-    authDispatch({
-      type: "login",
-      payload: {
+
+    let user = {};
+    let ok = true;
+    let token = "";
+    const res = await axios
+      .post(`${baseUrl}/auth/login`, {
         email: emailInput.current.value,
         password: passwordInput.current.value,
-      },
-    });
+      })
+      .catch((err) => {
+        setErrorMessage(() => "Error: " + err);
+        ok = false;
+      });
+
+    if (res && res.data && res.data.data) {
+      user = res.data.data.user;
+      token = res.data.data.access_token;
+    }
+
+    if (ok) {
+      authDispatch({
+        type: "login",
+        payload: {
+          message,
+          user: { ...user },
+          token: token,
+          ok,
+        },
+      });
+    }
+    setFetching(() => false);
   }
 
   return (
