@@ -1,22 +1,27 @@
 "use client";
 import { useContext, useEffect, useRef, useState } from "react";
-import { AuthContext } from "../_contexts/authContext";
+import { AuthContext, AuthDispatchContext } from "../_contexts/authContext";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { log, ucwords } from "../_appBackendApi/appBackendApi";
+import { MetaContext } from "../_contexts/metaContext";
 
 export default function Settings() {
   const authState = useContext(AuthContext);
+  const authDispatch = useContext(AuthDispatchContext);
+  const metaState = useContext(MetaContext);
   const prevAuthState = useRef(authState);
   const [errorMessage, setErrorMessage] = useState("");
+  const [selectedProvider, setSelectedProvider] = useState("");
   const [fetching, setFetching] = useState(false);
-  const providerInput = useRef();
-  const countryInput = useRef();
-  const categoryInput = useRef();
   const router = useRouter();
+  const newsProviders = [...metaState.providers];
   const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API;
+  const email = localStorage.getItem("user");
+  const token = localStorage.getItem("token");
 
   useEffect(() => {
-    if (authState.token != "") {
+    if (authState.token == "") {
       router.push("/");
     }
     if (prevAuthState.current !== authState) {
@@ -30,21 +35,33 @@ export default function Settings() {
     prevAuthState.current = authState;
   }, [authState]);
 
+  function handleProviderChange(event) {
+    const providerKey = event.target.value;
+    setSelectedProvider(() => providerKey);
+  }
+
   async function submitSettings(event) {
     event.preventDefault();
     setFetching(() => true);
     setErrorMessage(() => "");
 
-    let user = {};
+    // log(selectedProvider);
+    // return;
     let ok = true;
-    let token = "";
     let message = "";
+    let user = {};
     const res = await axios
-      .post(`${baseUrl}/auth/user/settings`, {
-        provider: providerInput.current.value,
-        country: countryInput.current.value,
-        category: categoryInput.current.value,
-      })
+      .post(
+        `${baseUrl}/auth/user/settings`,
+        {
+          provider: selectedProvider,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
       .catch((err) => {
         message = err;
         setErrorMessage(() => "Error: " + err);
@@ -53,9 +70,18 @@ export default function Settings() {
 
     if (res && res.data && res.data.data) {
       user = res.data.data.user;
-      token = res.data.data.access_token;
     }
 
+    authDispatch({
+      type: "settings_update",
+      payload: {
+        message,
+        user: { ...user, user_provider: selectedProvider },
+        token: token,
+        ok,
+      },
+    });
+    setSelectedProvider(() => selectedProvider);
     setFetching(() => false);
   }
 
@@ -72,7 +98,7 @@ export default function Settings() {
         <div className="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700">
           <div className="p-6 space-y-4 md:space-y-6 sm:p-8">
             <h1 className="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white">
-              Sign Up
+              Settings
             </h1>
 
             {!errorMessage || errorMessage == "" ? (
@@ -88,51 +114,28 @@ export default function Settings() {
             <form className="space-y-4 md:space-y-6" onSubmit={submitSettings}>
               <div>
                 <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                  Your name
+                  Update provider from{" "}
+                  <code>{authState.user.user_provider}</code> for{" "}
+                  <code>{email}</code>
                 </label>
-                <input
-                  type="text"
-                  name="name"
-                  id="name"
-                  ref={providerInput}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="John Doe"
-                  required={true}
-                />
               </div>
               <div>
-                <label
-                  // for="email"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Your email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  id="email"
-                  ref={countryInput}
-                  className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  placeholder="name@company.com"
-                  required={true}
-                />
-              </div>
-              <div>
-                <label
-                  // for="password"
-                  className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                >
-                  Password
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  id="password"
-                  ref={categoryInput}
-                  placeholder="••••••••"
-                  className="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                  required={true}
-                />
+                <div className="relative mb-4 flex flex-wrap item-center ">
+                  <label className="pt-2 font-bold">News Provider: </label>
+                  <br />
+                  <br />
+                  <select
+                    className="w-80"
+                    value={ucwords(selectedProvider)}
+                    onChange={handleProviderChange}
+                  >
+                    {newsProviders.map((item, index) => (
+                      <option key={index} value={ucwords(item.key)}>
+                        {ucwords(item.name)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {fetching ? (
@@ -146,7 +149,7 @@ export default function Settings() {
                   style={{ background: "red" }}
                   className="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
                 >
-                  Sign Up
+                  Update
                 </button>
               )}
             </form>

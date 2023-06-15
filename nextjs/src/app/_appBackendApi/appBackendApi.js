@@ -6,10 +6,9 @@ export function log(args) {
 
 export function isObject(variable) {
   if (typeof variable === "object" && variable !== null) {
-    console.log("The variable is an object.");
-  } else {
-    console.log("The variable is not an object.");
+    return true;
   }
+  return false;
 }
 
 export function ucwords(words) {
