@@ -1,20 +1,20 @@
 "use client";
 import { useContext, useEffect, useState } from "react";
-import { FeedsContext } from "./_contexts/feedsContext";
+import { FeedsContext, FeedsDispatchContext } from "./_contexts/feedsContext";
 import { MetaContext } from "./_contexts/metaContext";
 import { log, ucwords } from "./_appBackendApi/appBackendApi";
 import Link from "next/link";
+import axios from "axios";
 
 export default function Home() {
+  const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API;
   const metaState = useContext(MetaContext);
   const feedState = useContext(FeedsContext);
-  const [selectedCategory, setSelectedCategory] = useState(
-    feedState?.category?.name ?? ""
-  );
-  const [selectedCountry, setSelectedCountry] = useState(
-    feedState?.country?.name ?? ""
-  );
+  const dispatchFeeds = useContext(FeedsDispatchContext);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("");
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
   const [countries, setCountries] = useState([]);
   const [feedItems, setFeedItems] = useState([]);
@@ -32,10 +32,10 @@ export default function Home() {
     if (feedState?.search) {
       setSearch(() => feedState.search);
     }
-    if (feedState?.category) {
+    if (selectedCategory == "" && feedState?.category) {
       setSelectedCategory(() => feedState.category.name);
     }
-    if (feedState?.country) {
+    if (selectedCountry == "" && feedState?.country) {
       setSelectedCountry(() => feedState.country.name);
     }
     if (feedState?.items) {
@@ -44,18 +44,44 @@ export default function Home() {
   }, [feedState]);
 
   function handleCountryChange(event) {
-    setSelectedCountry(() => event.target.value);
+    const cntry = event.target.value;
+    setSelectedCountry(() => cntry);
   }
   function handleCategoryChange(event) {
-    setSelectedCategory(() => event.target.value);
-  }
-  function handleSearchChange(event) {
-    setSearch(() => event.target.value);
+    const cat = event.target.value;
+    setSelectedCategory(() => cat);
   }
 
-  return (
+  function handleSearchChange(event) {
+    const searchVal = event.target.value;
+    setSearch(() => searchVal);
+  }
+
+  function handleSearchKeyUp(event) {
+    if (event.key == "Enter") {
+      log("Searching ...");
+      reloadFeeds();
+    }
+  }
+
+  async function reloadFeeds() {
+    setLoading(()=> true);
+    const uri = `${baseUrl}/feeds?search=${search}&category=${selectedCategory}&country=${selectedCountry}`;
+    try {
+      const response = await axios.get(uri);
+      log(uri);
+      dispatchFeeds({ type: "changed", payload: response.data.data.feeds });
+    } catch (error) {
+      alert(error);
+    }
+    setLoading(()=> false);
+  }
+
+  return loading ? (
+    <p className="text-center"> Loading ...</p>
+  ) : (
     <>
-      <div className="mx-20 mt-10 grid gap-10 lg:grid-cols-3">
+      <div className="mx-20 mt-10 grid gap-10 lg:grid-cols-4">
         <div className="relative mb-4 flex flex-wrap">
           <input
             type="search"
@@ -64,6 +90,7 @@ export default function Home() {
             aria-label="Search"
             aria-describedby="button-addon2"
             onChange={handleSearchChange}
+            onKeyUp={handleSearchKeyUp}
             value={search}
           />
 
@@ -103,8 +130,9 @@ export default function Home() {
           <label className="pt-2 font-bold">Category: </label>
           <select
             className="w-80"
-            value={ucwords(selectedCategory)}
-            onChange={handleCategoryChange}
+            value={selectedCategory}
+            onInput={handleCategoryChange}
+            // onChange={handleCategoryChange}
           >
             {categories.map((item) => (
               <option key={item.name} value={ucwords(item.name)}>
@@ -112,6 +140,16 @@ export default function Home() {
               </option>
             ))}
           </select>
+        </div>
+        <div className="relative mb-4 flex flex-wrap item-center">
+          <button
+            type="button"
+            style={{ background: "green" }}
+            onClick={reloadFeeds}
+            className="w-full text-white bg-primary-600 hover:bg-primary-700 focus:ring-4 focus:outline-none focus:ring-primary-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+          >
+            Submit
+          </button>
         </div>
       </div>
       <main className="flex min-h-screen flex-col items-center justify-between p-24">
@@ -169,7 +207,17 @@ export default function Home() {
                     </small>
                   </p>
                   <p className="text-neutral-500 dark:text-neutral-300">
-                    {item.description.substring(0, 100)}
+                    {item.description.substring(0, 250)}{" "}
+                    <small>
+                      <br />
+                      <Link
+                        href={item.link}
+                        target="_blank"
+                        className=" font-large text-success"
+                      >
+                        <b> {">>"} Read More</b>
+                      </Link>
+                    </small>
                   </p>
                 </div>
               </div>

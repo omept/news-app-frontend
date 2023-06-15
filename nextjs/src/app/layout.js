@@ -9,7 +9,7 @@ import { MetaContext } from "./_contexts/metaContext";
 import { metaReducer } from "./_reducers/metaReducer";
 import axios from "axios";
 import { isObject, log } from "./_appBackendApi/appBackendApi";
-import { FeedsContext } from "./_contexts/feedsContext";
+import { FeedsContext, FeedsDispatchContext } from "./_contexts/feedsContext";
 import { feedsReducer } from "./_reducers/feedsReducer";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -80,8 +80,10 @@ export default function RootLayout({ children }) {
           <AuthDispatchContext.Provider value={dispatch}>
             <MetaContext.Provider value={metaState}>
               <FeedsContext.Provider value={feedsState}>
-                <Header />
-                {children}
+                <FeedsDispatchContext.Provider value={dispatchFeeds}>
+                  <Header />
+                  {children}
+                </FeedsDispatchContext.Provider>
               </FeedsContext.Provider>
             </MetaContext.Provider>
           </AuthDispatchContext.Provider>
