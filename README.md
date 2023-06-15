@@ -18,7 +18,7 @@ Next, navigate in your terminal to the directory you cloned this repo and execut
 
 $ cd <application-name>/src
 
-$ cp .env.example .env.local # Update database credentials
+$ cp .env.example .env.local # Update credentials
 
 $ cp .. # Go back one folder to get to root
 
