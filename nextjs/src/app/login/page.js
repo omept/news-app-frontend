@@ -2,9 +2,8 @@
 import { log } from "../_appBackendApi/appBackendApi";
 import { useContext, useEffect, useRef, useState } from "react";
 import { AuthContext, AuthDispatchContext } from "../_contexts/authContext";
-import { useRouter } from 'next/router';
+import { useRouter } from "next/navigation";
 import axios from "axios";
-
 
 export default function Login() {
   const authState = useContext(AuthContext);
@@ -17,11 +16,10 @@ export default function Login() {
   const router = useRouter();
   const baseUrl = process.env.NEXT_PUBLIC_BACKEND_API;
 
-  if (authState.token != "") {
-    router.push("/");
-  }
-
   useEffect(() => {
+    if (authState.token != "") {
+      router.push("/");
+    }
     if (prevAuthState.current !== authState) {
       // Perform any other actions based on the updated context value
       if (!authState.ok) {
@@ -41,12 +39,14 @@ export default function Login() {
     let user = {};
     let ok = true;
     let token = "";
+    let message = "";
     const res = await axios
       .post(`${baseUrl}/auth/login`, {
         email: emailInput.current.value,
         password: passwordInput.current.value,
       })
       .catch((err) => {
+        message = err;
         setErrorMessage(() => "Error: " + err);
         ok = false;
       });

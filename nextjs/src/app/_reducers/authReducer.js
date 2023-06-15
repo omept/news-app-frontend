@@ -4,6 +4,7 @@ import { log } from "../_appBackendApi/appBackendApi";
 export function authReducer(authState, action) {
   switch (action.type) {
     case "login": {
+      localStorage.setItem('token', action.payload.token);
       return action.payload;
     }
 
@@ -18,6 +19,7 @@ export function authReducer(authState, action) {
     }
     case "logout": {
       log("logout called");
+      localStorage.removeItem('token');
       return { user: {}, token: "", message: "" };
     }
     default: {
