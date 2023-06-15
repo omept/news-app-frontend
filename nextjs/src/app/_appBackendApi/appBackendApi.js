@@ -4,29 +4,17 @@ export function log(args) {
   console.log(args);
 }
 
-export const appBackendApi = function (baseUrl) {
-  return {
-    login: async function (email, password) {
-      let message = "Login successful";
-      let user = {};
-      let ok =true;
-      let token = {};
-      const res = await axios.post(`${baseUrl}/auth/login`, {
-        email,
-        password,
-      }).catch(err => {message = "Invalid credentials"; ok = false});
+export function isObject(variable) {
+  if (typeof variable === "object" && variable !== null) {
+    console.log("The variable is an object.");
+  } else {
+    console.log("The variable is not an object.");
+  }
+}
 
-      if(res && res.data && res.data.data){
-        user = res.data.data.user;
-        token = res.data.data.access_token;
-      }
-
-      return {
-        message,
-        user: {...user},
-        token: token,
-        ok,
-      };
-    }
-  };
-};
+export function ucwords(words) {
+  return words
+    .split(" ") // Split the sentence into an array of words
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize the first letter of each word
+    .join(" "); // Join the words back into a sentence
+}
